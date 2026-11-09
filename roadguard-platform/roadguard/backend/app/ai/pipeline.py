@@ -36,9 +36,14 @@ def get_yolo_model():
         if alt_path.exists():
             model_path = alt_path
         else:
-            _MODEL_FAILED = True
-            _MODEL_LOAD_ERROR = f"Model weights file not found at {model_path}"
-            return None
+            try:
+                from ultralytics import YOLO
+                _MODEL_INSTANCE = YOLO('yolov8n.pt')
+                return _MODEL_INSTANCE
+            except Exception as e:
+                _MODEL_FAILED = True
+                _MODEL_LOAD_ERROR = f'Model weights file not found at {model_path} and fallback failed: {e}'
+                return None
 
     try:
         from ultralytics import YOLO

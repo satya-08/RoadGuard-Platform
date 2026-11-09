@@ -3,7 +3,19 @@ import {
   MaintenanceTask, RepairVerification, DashboardStats
 } from '../types';
 
-const API_BASE = '/api/v1';
+const RAW_BASE = (import.meta as any).env?.VITE_API_BASE_URL;
+const API_BASE = RAW_BASE 
+  ? (RAW_BASE.endsWith('/api/v1') ? RAW_BASE : `${RAW_BASE.replace(/\/$/, '')}/api/v1`)
+  : '/api/v1';
+
+export const getMediaUrl = (path?: string): string => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
+  if (!RAW_BASE) return path;
+  const origin = RAW_BASE.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${origin}${cleanPath}`;
+};
 
 function getAuthHeader(): Record<string, string> {
   const token = localStorage.getItem('roadguard_token');
