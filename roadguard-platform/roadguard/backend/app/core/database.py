@@ -9,15 +9,20 @@ logger = logging.getLogger("roadguard.database")
 connect_args = {}
 engine_kwargs = {"echo": False}
 
-if settings.DATABASE_URL.startswith("sqlite"):
+db_url = settings.DATABASE_URL
+# Automatically normalize postgres:// to postgresql:// for SQLAlchemy 2.0+
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+if db_url.startswith("sqlite"):
     connect_args["check_same_thread"] = False
     engine = create_engine(
-        settings.DATABASE_URL,
+        db_url,
         connect_args=connect_args,
         **engine_kwargs
     )
 else:
-    # MySQL / PostgreSQL connection pooling
+    # PostgreSQL / MySQL connection pooling
     engine_kwargs.update({
         "pool_size": 10,
         "max_overflow": 20,
@@ -25,7 +30,7 @@ else:
         "pool_pre_ping": True,
     })
     engine = create_engine(
-        settings.DATABASE_URL,
+        db_url,
         **engine_kwargs
     )
 
