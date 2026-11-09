@@ -9,6 +9,8 @@ setup(
         "fastapi>=0.110.0",
         "uvicorn[standard]>=0.28.0",
         "pydantic>=2.6.0",
+        "pydantic[email]>=2.6.0",
+        "email-validator>=2.0.0",
         "pydantic-settings>=2.2.0",
         "sqlalchemy>=2.0.28",
         "psycopg[binary]>=3.1.18",
