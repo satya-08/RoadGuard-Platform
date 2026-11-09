@@ -2,25 +2,17 @@ import os
 import sys
 from pathlib import Path
 
-# Automatically inject roadguard-platform into Python's module search path
+# Add repository root and roadguard-platform to sys.path
 REPO_ROOT = Path(__file__).resolve().parent
-candidates = [
-    REPO_ROOT / "roadguard-platform",
-    REPO_ROOT / "roadguard-platform" / "roadguard",
-    REPO_ROOT / "roadguard",
-    REPO_ROOT,
-]
-for p in candidates:
-    if p.exists() and str(p) not in sys.path:
-        sys.path.insert(0, str(p))
+platform_path = REPO_ROOT / "roadguard-platform"
 
-try:
-    from roadguard.backend.app.main import app
-except ModuleNotFoundError:
-    try:
-        from backend.app.main import app
-    except ModuleNotFoundError:
-        from app.main import app
+if str(platform_path) not in sys.path:
+    sys.path.insert(0, str(platform_path))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+# Direct import now works with complete package hierarchy
+from roadguard.backend.app.main import app
 
 if __name__ == "__main__":
     import uvicorn
