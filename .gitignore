@@ -27,3 +27,5 @@
 
 # Cache
 .pytest_cache/
+.neon
+node_modules/
