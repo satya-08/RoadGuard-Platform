@@ -342,7 +342,7 @@ export const ExplainableAIPage: React.FC = () => {
                         ? (customResult ? getMediaUrl(customResult.xai_heatmap_url) : getMediaUrl(selectedPreset.xaiHeatmap))
                         : viewMode === 'annotated'
                         ? (customResult ? getMediaUrl(customResult.annotated_image_url) : getMediaUrl(selectedPreset.annotatedImage))
-                        : (customResult ? customPreview : getMediaUrl(selectedPreset.rawImage))
+                        : (customResult ? getMediaUrl(customPreview) : getMediaUrl(selectedPreset.rawImage))
                     }
                     alt="Inspection View"
                     className="w-full h-full object-contain"

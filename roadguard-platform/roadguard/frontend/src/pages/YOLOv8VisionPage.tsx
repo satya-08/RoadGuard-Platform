@@ -275,7 +275,7 @@ export const YOLOv8VisionPage: React.FC = () => {
                     </div>
                     <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 aspect-[4/3] flex items-center justify-center">
                       <img
-                        src={customResult ? (customPreview || '') : getMediaUrl(selectedPreset.rawImage)}
+                        src={customResult ? getMediaUrl(customPreview) : getMediaUrl(selectedPreset.rawImage)}
                         onError={handleImageError}
                         alt="Raw Optical Input"
                         className="w-full h-full object-cover"
@@ -324,7 +324,7 @@ export const YOLOv8VisionPage: React.FC = () => {
                   src={
                     viewMode === 'annotated'
                       ? (customResult ? getMediaUrl(customResult.annotated_image_url) : getMediaUrl(selectedPreset.annotatedImage))
-                      : (customResult ? customPreview : getMediaUrl(selectedPreset.rawImage))
+                      : (customResult ? getMediaUrl(customPreview) : getMediaUrl(selectedPreset.rawImage))
                   }
                   alt="YOLOv8 Inspection"
                   className="w-full h-full object-contain"

@@ -19,7 +19,7 @@ export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event
   e.currentTarget.src = DEFAULT_ROAD_IMAGE;
 };
 
-export const getMediaUrl = (path?: string): string => {
+export const getMediaUrl = (path?: string | null): string => {
   if (!path) return DEFAULT_ROAD_IMAGE;
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
     return path;
