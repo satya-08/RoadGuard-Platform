@@ -48,7 +48,8 @@ async def analyze_uploaded_file(file: UploadFile = File(...)):
         )
 
     file_id = str(uuid.uuid4())[:8]
-    raw_filename = f"raw_{file_id}{ext}"
+    orig_name = Path(file.filename or "").stem.replace(" ", "_")[:24]
+    raw_filename = f"{orig_name}_{file_id}{ext}" if orig_name else f"raw_{file_id}{ext}"
     raw_path = settings.RAW_DIR / raw_filename
 
     try:

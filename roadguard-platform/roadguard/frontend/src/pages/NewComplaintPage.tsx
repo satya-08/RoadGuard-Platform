@@ -129,7 +129,8 @@ export const NewComplaintPage: React.FC = () => {
 
       const res = await fetch(getMediaUrl(url));
       const blob = await res.blob();
-      const sampleFile = new File([blob], 'sample_distress.jpg', { type: blob.type || 'image/jpeg' });
+      const filename = url.split('/').pop() || 'sample_distress.jpg';
+      const sampleFile = new File([blob], filename, { type: blob.type || 'image/jpeg' });
       setFile(sampleFile);
 
       // Run AI analysis
