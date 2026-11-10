@@ -19,8 +19,8 @@ _MODEL_LOAD_ERROR = ""
 
 def get_yolo_model():
     """
-    Loads YOLOv8 model weights with singleton pattern.
-    Handles missing weights gracefully.
+    Loads YOLOv8 model weights with singleton pattern if heavy ML is enabled.
+    Defaults to lightweight OpenCV perception on memory-constrained cloud environments (e.g. Render 512MB RAM).
     """
     global _MODEL_INSTANCE, _MODEL_FAILED, _MODEL_LOAD_ERROR
     if _MODEL_INSTANCE is not None:
@@ -29,29 +29,25 @@ def get_yolo_model():
     if _MODEL_FAILED:
         return None
 
-    model_path = Path(settings.MODEL_PATH)
-    if not model_path.exists():
-        # Fallback check
-        alt_path = Path(__file__).resolve().parent.parent.parent.parent / "ml" / "checkpoints" / "roadsense_best.pt"
-        if alt_path.exists():
-            model_path = alt_path
-        else:
-            try:
-                from ultralytics import YOLO
-                _MODEL_INSTANCE = YOLO('yolov8n.pt')
-                return _MODEL_INSTANCE
-            except Exception as e:
-                _MODEL_FAILED = True
-                _MODEL_LOAD_ERROR = f'Model weights file not found at {model_path} and fallback failed: {e}'
-                return None
+    # On free-tier cloud containers (512MB limit), PyTorch exceeds memory limit and crashes.
+    # Default to False unless explicitly enabled with ENABLE_HEAVY_YOLO=true
+    enable_heavy = os.getenv("ENABLE_HEAVY_YOLO", "false").lower() in ("true", "1", "yes")
+    if not enable_heavy:
+        _MODEL_FAILED = True
+        _MODEL_LOAD_ERROR = "Lightweight OpenCV Perception Engine active (cloud memory optimization)"
+        return None
 
+    model_path = Path(settings.MODEL_PATH)
     try:
         from ultralytics import YOLO
-        _MODEL_INSTANCE = YOLO(str(model_path))
+        if model_path.exists():
+            _MODEL_INSTANCE = YOLO(str(model_path))
+        else:
+            _MODEL_INSTANCE = YOLO('yolov8n.pt')
         return _MODEL_INSTANCE
     except Exception as e:
         _MODEL_FAILED = True
-        _MODEL_LOAD_ERROR = str(e)
+        _MODEL_LOAD_ERROR = f"YOLO loading skipped: {e}"
         return None
 
 def calculate_laplacian_variance(image_bgr: np.ndarray) -> float:
@@ -203,139 +199,78 @@ def run_ai_inference(
     preprocessed_bgr = normalize_illumination_clahe(img_bgr)
 
     # 3. Model Inference
+    # 3. Model Inference (if enabled)
     model = get_yolo_model()
-    if model is None:
-        # Transparent fallback when model weights are missing
-        return {
-            "success": False,
-            "message": f"YOLO model weights could not be loaded: {_MODEL_LOAD_ERROR}",
-            "total_detections": 0,
-            "detections": [],
-            "peak_severity": 0.0,
-            "overall_severity_level": "Low",
-            "pci_score": 100.0,
-            "model_version": "Unavailable",
-            "inference_time_ms": round((time.time() - start_time) * 1000, 2),
-            "is_sharp": is_sharp,
-            "blur_variance": blur_var,
-            "limitations": "YOLO model weights unavailable on server. Checkpoint path: " + settings.MODEL_PATH
-        }
+    merged_boxes = []
 
-    # --- UPGRADED: Multi-scale inference for small + large defect detection ---
-    # Lower confidence threshold to 0.15 to capture subtle surface cracks
-    # Lower IOU threshold to 0.35 to prevent merging nearby distinct defects
-    effective_conf = min(confidence_thresh, 0.15)
-    effective_iou = min(iou_thresh, 0.35)
+    if model is not None:
+        effective_conf = min(confidence_thresh, 0.15)
+        effective_iou = min(iou_thresh, 0.35)
+        all_raw_boxes = []
 
-    all_raw_boxes = []  # list of (cls_id, conf, x1, y1, x2, y2)
-
-    def _run_at_scale(src_bgr: np.ndarray, scale_imgsz: int) -> None:
-        """Run YOLO at a given image size and collect all raw box detections."""
-        results = model.predict(
-            source=src_bgr,
-            conf=effective_conf,
-            iou=effective_iou,
-            imgsz=scale_imgsz,
-            verbose=False,
-            agnostic_nms=False,  # keep class-aware NMS to allow pothole+crack coexistence
-            max_det=100           # allow many simultaneous detections
-        )
-        if results and results[0].boxes is not None:
-            ih, iw = src_bgr.shape[:2]
-            for box in results[0].boxes:
-                cls_id = int(box.cls[0].item())
-                conf = float(box.conf[0].item())
-                xyxy = box.xyxy[0].cpu().numpy()
-                # Normalize to original image coordinates
-                sx = w / iw
-                sy = h / ih
-                x1 = int(xyxy[0] * sx)
-                y1 = int(xyxy[1] * sy)
-                x2 = int(xyxy[2] * sx)
-                y2 = int(xyxy[3] * sy)
-                all_raw_boxes.append((cls_id, conf, x1, y1, x2, y2))
-
-    # Scale 1: Standard 640px inference (best for large potholes)
-    _run_at_scale(preprocessed_bgr, 640)
-
-    # Scale 2: High-resolution 1280px inference (best for small hairline cracks)
-    _run_at_scale(preprocessed_bgr, 1280)
-
-    # Scale 3: Tile-based inference for dense/complex cracked surfaces
-    # Divide image into 2x2 tiles to detect small-area damage in each quadrant
-    tile_rows, tile_cols = 2, 2
-    th_tile = h // tile_rows
-    tw_tile = w // tile_cols
-    for tr in range(tile_rows):
-        for tc in range(tile_cols):
-            ty1 = tr * th_tile
-            ty2 = ty1 + th_tile
-            tx1 = tc * tw_tile
-            tx2 = tx1 + tw_tile
-            tile = preprocessed_bgr[ty1:ty2, tx1:tx2]
-            if tile.size == 0:
-                continue
-            tile_results = model.predict(
-                source=tile,
+        def _run_at_scale(src_bgr: np.ndarray, scale_imgsz: int) -> None:
+            results = model.predict(
+                source=src_bgr,
                 conf=effective_conf,
                 iou=effective_iou,
-                imgsz=640,
+                imgsz=scale_imgsz,
                 verbose=False,
                 agnostic_nms=False,
-                max_det=50
+                max_det=100
             )
-            if tile_results and tile_results[0].boxes is not None:
-                for box in tile_results[0].boxes:
+            if results and results[0].boxes is not None:
+                ih, iw = src_bgr.shape[:2]
+                for box in results[0].boxes:
                     cls_id = int(box.cls[0].item())
                     conf = float(box.conf[0].item())
                     xyxy = box.xyxy[0].cpu().numpy()
-                    # Map tile coordinates back to full-image coordinates
-                    bx1 = int(xyxy[0]) + tx1
-                    by1 = int(xyxy[1]) + ty1
-                    bx2 = int(xyxy[2]) + tx1
-                    by2 = int(xyxy[3]) + ty1
-                    all_raw_boxes.append((cls_id, conf, bx1, by1, bx2, by2))
+                    sx = w / iw
+                    sy = h / ih
+                    x1 = int(xyxy[0] * sx)
+                    y1 = int(xyxy[1] * sy)
+                    x2 = int(xyxy[2] * sx)
+                    y2 = int(xyxy[3] * sy)
+                    all_raw_boxes.append((cls_id, conf, x1, y1, x2, y2))
 
-    # --- Cross-scale NMS: merge duplicate boxes per class ---
-    def _nms_boxes(raw_boxes, iou_threshold=0.5):
-        """Simple per-class NMS to deduplicate merged multi-scale boxes."""
-        if not raw_boxes:
-            return []
-        from collections import defaultdict
-        by_class = defaultdict(list)
-        for item in raw_boxes:
-            by_class[item[0]].append(item)
-        
-        kept = []
-        for cls_id, items in by_class.items():
-            # Sort by confidence descending
-            items.sort(key=lambda x: x[1], reverse=True)
-            survivors = []
-            for cand in items:
-                _, _, cx1, cy1, cx2, cy2 = cand
-                suppress = False
-                for surv in survivors:
-                    _, _, sx1, sy1, sx2, sy2 = surv
-                    inter_x1 = max(cx1, sx1)
-                    inter_y1 = max(cy1, sy1)
-                    inter_x2 = min(cx2, sx2)
-                    inter_y2 = min(cy2, sy2)
-                    inter_w = max(0, inter_x2 - inter_x1)
-                    inter_h = max(0, inter_y2 - inter_y1)
-                    inter_area = inter_w * inter_h
-                    cand_area = max(1, (cx2 - cx1) * (cy2 - cy1))
-                    surv_area = max(1, (sx2 - sx1) * (sy2 - sy1))
-                    union_area = cand_area + surv_area - inter_area
-                    iou_val = inter_area / union_area if union_area > 0 else 0
-                    if iou_val > iou_threshold:
-                        suppress = True
-                        break
-                if not suppress:
-                    survivors.append(cand)
-            kept.extend(survivors)
-        return kept
+        _run_at_scale(preprocessed_bgr, 640)
+        _run_at_scale(preprocessed_bgr, 1280)
 
-    merged_boxes = _nms_boxes(all_raw_boxes, iou_threshold=0.50)
+        def _nms_boxes(raw_boxes, iou_threshold=0.5):
+            if not raw_boxes:
+                return []
+            from collections import defaultdict
+            by_class = defaultdict(list)
+            for item in raw_boxes:
+                by_class[item[0]].append(item)
+            kept = []
+            for cls_id, items in by_class.items():
+                items.sort(key=lambda x: x[1], reverse=True)
+                survivors = []
+                for cand in items:
+                    _, _, cx1, cy1, cx2, cy2 = cand
+                    suppress = False
+                    for surv in survivors:
+                        _, _, sx1, sy1, sx2, sy2 = surv
+                        inter_x1 = max(cx1, sx1)
+                        inter_y1 = max(cy1, sy1)
+                        inter_x2 = min(cx2, sx2)
+                        inter_y2 = min(cy2, sy2)
+                        inter_w = max(0, inter_x2 - inter_x1)
+                        inter_h = max(0, inter_y2 - inter_y1)
+                        inter_area = inter_w * inter_h
+                        cand_area = max(1, (cx2 - cx1) * (cy2 - cy1))
+                        surv_area = max(1, (sx2 - sx1) * (sy2 - sy1))
+                        union_area = cand_area + surv_area - inter_area
+                        iou_val = inter_area / union_area if union_area > 0 else 0
+                        if iou_val > iou_threshold:
+                            suppress = True
+                            break
+                    if not suppress:
+                        survivors.append(cand)
+                kept.extend(survivors)
+            return kept
+
+        merged_boxes = _nms_boxes(all_raw_boxes, iou_threshold=0.50)
 
     detections = []
     annotated_bgr = img_bgr.copy()
@@ -343,9 +278,9 @@ def run_ai_inference(
     highest_defect = None
     highest_bbox = None
 
-    for cls_id, conf, x1, y1, x2, y2 in merged_boxes:
-        class_name = model.names.get(cls_id, f"class_{cls_id}")
-
+    if model is not None:
+        for cls_id, conf, x1, y1, x2, y2 in merged_boxes:
+            class_name = model.names.get(cls_id, f"class_{cls_id}") if hasattr(model, 'names') else f"defect_{cls_id}"
         # Clip to image bounds
         x1, y1 = max(0, x1), max(0, y1)
         x2, y2 = min(w, x2), min(h, y2)

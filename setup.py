@@ -15,5 +15,10 @@ setup(
         "sqlalchemy>=2.0.28",
         "psycopg[binary]>=3.1.18",
         "psycopg2-binary>=2.9.9",
+        "opencv-python-headless>=4.9.0.80",
+        "numpy>=1.26.0,<2.0.0",
+        "pillow>=10.2.0",
+        "python-multipart>=0.0.9",
+        "psutil>=5.9.8",
     ],
 )
