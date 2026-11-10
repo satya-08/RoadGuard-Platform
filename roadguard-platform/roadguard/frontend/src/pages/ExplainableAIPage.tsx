@@ -17,7 +17,7 @@ import {
   Eye,
   Info
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api, getMediaUrl, handleImageError } from '../services/api';
 
 interface XAIPreset {
   id: string;
@@ -282,7 +282,8 @@ export const ExplainableAIPage: React.FC = () => {
                     </div>
                     <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 aspect-video md:aspect-[4/3] flex items-center justify-center">
                       <img
-                        src={customResult ? (customPreview || '') : selectedPreset.rawImage}
+                        src={customResult ? (customPreview || '') : getMediaUrl(selectedPreset.rawImage)}
+                        onError={handleImageError}
                         alt="Raw Ingestion"
                         className="w-full h-full object-cover"
                       />
@@ -297,7 +298,8 @@ export const ExplainableAIPage: React.FC = () => {
                     </div>
                     <div className="relative rounded-xl overflow-hidden border border-sky-900/40 bg-slate-950 aspect-video md:aspect-[4/3] flex items-center justify-center">
                       <img
-                        src={customResult ? (customResult.annotated_image_url || customPreview || '') : selectedPreset.annotatedImage}
+                        src={customResult ? (getMediaUrl(customResult.annotated_image_url) || customPreview || '') : getMediaUrl(selectedPreset.annotatedImage)}
+                        onError={handleImageError}
                         alt="YOLOv8 Detection"
                         className="w-full h-full object-cover"
                       />
@@ -312,7 +314,8 @@ export const ExplainableAIPage: React.FC = () => {
                     </div>
                     <div className="relative rounded-xl overflow-hidden border border-indigo-700/50 bg-slate-950 aspect-video md:aspect-[4/3] flex items-center justify-center">
                       <img
-                        src={customResult ? (customResult.xai_heatmap_url || '') : selectedPreset.xaiHeatmap}
+                        src={customResult ? (getMediaUrl(customResult.xai_heatmap_url) || '') : getMediaUrl(selectedPreset.xaiHeatmap)}
+                        onError={handleImageError}
                         alt="XAI Saliency Heatmap"
                         className="w-full h-full object-cover transition-opacity duration-200"
                         style={{ opacity: heatmapOpacity }}
@@ -336,13 +339,14 @@ export const ExplainableAIPage: React.FC = () => {
                   <img
                     src={
                       viewMode === 'heatmap' 
-                        ? (customResult ? customResult.xai_heatmap_url : selectedPreset.xaiHeatmap)
+                        ? (customResult ? getMediaUrl(customResult.xai_heatmap_url) : getMediaUrl(selectedPreset.xaiHeatmap))
                         : viewMode === 'annotated'
-                        ? (customResult ? customResult.annotated_image_url : selectedPreset.annotatedImage)
-                        : (customResult ? customPreview : selectedPreset.rawImage)
+                        ? (customResult ? getMediaUrl(customResult.annotated_image_url) : getMediaUrl(selectedPreset.annotatedImage))
+                        : (customResult ? customPreview : getMediaUrl(selectedPreset.rawImage))
                     }
                     alt="Inspection View"
                     className="w-full h-full object-contain"
+                    onError={handleImageError}
                     style={viewMode === 'heatmap' ? { opacity: heatmapOpacity } : undefined}
                   />
                 </div>

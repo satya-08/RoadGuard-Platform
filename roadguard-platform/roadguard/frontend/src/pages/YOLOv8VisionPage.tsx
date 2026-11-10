@@ -18,7 +18,7 @@ import {
   FileCheck2,
   Scan
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api, getMediaUrl, handleImageError } from '../services/api';
 
 interface VisionPreset {
   id: string;
@@ -275,7 +275,8 @@ export const YOLOv8VisionPage: React.FC = () => {
                     </div>
                     <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 aspect-[4/3] flex items-center justify-center">
                       <img
-                        src={customResult ? (customPreview || '') : selectedPreset.rawImage}
+                        src={customResult ? (customPreview || '') : getMediaUrl(selectedPreset.rawImage)}
+                        onError={handleImageError}
                         alt="Raw Optical Input"
                         className="w-full h-full object-cover"
                       />
@@ -290,7 +291,8 @@ export const YOLOv8VisionPage: React.FC = () => {
                     </div>
                     <div className="relative rounded-xl overflow-hidden border border-sky-800/60 bg-slate-950 aspect-[4/3] flex items-center justify-center group">
                       <img
-                        src={customResult ? (customResult.annotated_image_url || customPreview || '') : selectedPreset.annotatedImage}
+                        src={customResult ? (getMediaUrl(customResult.annotated_image_url) || customPreview || '') : getMediaUrl(selectedPreset.annotatedImage)}
+                        onError={handleImageError}
                         alt="YOLOv8 Detection"
                         className="w-full h-full object-cover"
                       />
@@ -321,11 +323,12 @@ export const YOLOv8VisionPage: React.FC = () => {
                 <img
                   src={
                     viewMode === 'annotated'
-                      ? (customResult ? customResult.annotated_image_url : selectedPreset.annotatedImage)
-                      : (customResult ? customPreview : selectedPreset.rawImage)
+                      ? (customResult ? getMediaUrl(customResult.annotated_image_url) : getMediaUrl(selectedPreset.annotatedImage))
+                      : (customResult ? customPreview : getMediaUrl(selectedPreset.rawImage))
                   }
                   alt="YOLOv8 Inspection"
                   className="w-full h-full object-contain"
+                  onError={handleImageError}
                 />
               </div>
             )}

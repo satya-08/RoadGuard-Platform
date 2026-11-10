@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../services/api';
+import { api, getMediaUrl, handleImageError } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Complaint } from '../types';
 import { 
@@ -444,7 +444,8 @@ export const FieldInspectionPage: React.FC = () => {
                         {/* Image Thumbnail with Overlay */}
                         <div className="md:col-span-3 relative group">
                           <img
-                            src={item.annotated_image_url || item.image_url}
+                            src={getMediaUrl(item.annotated_image_url || item.image_url)}
+                            onError={handleImageError}
                             alt="Damage evidence"
                             className="w-full h-36 object-cover rounded-xl border border-slate-800 group-hover:opacity-90 transition cursor-pointer"
                             onClick={() => setPreviewImage(item.annotated_image_url || item.image_url)}
@@ -802,7 +803,7 @@ export const FieldInspectionPage: React.FC = () => {
               <span className="font-bold text-white uppercase tracking-wider">High-Resolution Damage Evidence</span>
               <button onClick={() => setPreviewImage(null)} className="text-slate-400 hover:text-white font-bold text-base">✕</button>
             </div>
-            <img src={previewImage} alt="Expanded damage evidence" className="w-full max-h-[75vh] object-contain rounded-xl border border-slate-800" />
+            <img src={getMediaUrl(previewImage)} onError={handleImageError} alt="Expanded damage evidence" className="w-full max-h-[75vh] object-contain rounded-xl border border-slate-800" />
           </div>
         </div>
       )}

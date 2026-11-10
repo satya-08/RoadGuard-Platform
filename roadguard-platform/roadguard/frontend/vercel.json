@@ -3,11 +3,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://ROADGUARD_BACKEND_URL/api/$1"
+      "destination": "https://roadguard-api.onrender.com/api/$1"
     },
     {
       "source": "/uploads/(.*)",
-      "destination": "https://ROADGUARD_BACKEND_URL/uploads/$1"
+      "destination": "https://roadguard-api.onrender.com/uploads/$1"
     },
     {
       "source": "/(.*)",
@@ -15,6 +15,19 @@
     }
   ],
   "headers": [
+    {
+      "source": "/uploads/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [

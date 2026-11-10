@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { api } from '../services/api';
+import { api, getMediaUrl, DEFAULT_ROAD_IMAGE } from '../services/api';
 import { MapPin, Filter } from 'lucide-react';
 
 // Fix Leaflet's default marker icon paths in Vite bundles
@@ -294,7 +294,7 @@ export const InteractiveMapPage: React.FC = () => {
             <strong>Status:</strong> ${d.status || 'Submitted'}<br/>
             <strong>Authority:</strong> ${d.responsible_authority || 'Routing Assigned'}
           </div>
-          ${d.annotated_image_url ? `<img src="${d.annotated_image_url}" style="width: 100%; height: 95px; object-fit: cover; border-radius: 6px; margin-top: 6px; border: 1px solid #cbd5e1;"/>` : ''}
+          ${(d.annotated_image_url || d.image_url) ? `<img src="${getMediaUrl(d.annotated_image_url || d.image_url)}" onerror="this.onerror=null;this.src='${DEFAULT_ROAD_IMAGE}'" style="width: 100%; height: 95px; object-fit: cover; border-radius: 6px; margin-top: 6px; border: 1px solid #cbd5e1;"/>` : ''}
         </div>
       `);
     });

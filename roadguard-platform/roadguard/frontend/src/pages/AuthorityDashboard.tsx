@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, getMediaUrl, handleImageError } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Complaint, DashboardStats, MaintenanceTask } from '../types';
 import { 
@@ -227,13 +227,15 @@ export const AuthorityDashboard: React.FC = () => {
                       <td className="py-3 px-4">
                         <div className="flex items-center space-x-2">
                           <img
-                            src={c.annotated_image_url || c.image_url}
+                            src={getMediaUrl(c.annotated_image_url || c.image_url)}
+                            onError={handleImageError}
                             alt="Damage"
                             className="w-14 h-10 object-cover rounded border border-slate-700"
                           />
                           {c.xai_heatmap_url && (
                             <img
-                              src={c.xai_heatmap_url}
+                              src={getMediaUrl(c.xai_heatmap_url)}
+                              onError={handleImageError}
                               alt="XAI"
                               className="w-14 h-10 object-cover rounded border border-indigo-700/50"
                               title="XAI Saliency"

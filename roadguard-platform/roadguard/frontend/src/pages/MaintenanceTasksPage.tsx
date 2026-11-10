@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../services/api';
+import { api, getMediaUrl, handleImageError } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { MaintenanceTask, RepairVerification } from '../types';
 import { Wrench, CheckCircle, Clock, Upload, ShieldCheck, AlertCircle, Sparkles, FileText } from 'lucide-react';
@@ -248,7 +248,8 @@ export const MaintenanceTasksPage: React.FC = () => {
                     <div>
                       <p className="text-[10px] font-mono text-slate-400 mb-1">Before Repair (Original Defect)</p>
                       <img
-                        src={verifyResult.before_image_url}
+                        src={getMediaUrl(verifyResult.before_image_url)}
+                        onError={handleImageError}
                         alt="Before"
                         className="w-full h-40 object-cover rounded-xl border border-slate-800"
                       />
@@ -256,7 +257,8 @@ export const MaintenanceTasksPage: React.FC = () => {
                     <div>
                       <p className="text-[10px] font-mono text-emerald-400 mb-1">After Repair (Re-Inference)</p>
                       <img
-                        src={verifyResult.annotated_after_url || verifyResult.after_image_url}
+                        src={getMediaUrl(verifyResult.annotated_after_url || verifyResult.after_image_url)}
+                        onError={handleImageError}
                         alt="After"
                         className="w-full h-40 object-cover rounded-xl border border-slate-800"
                       />

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
+import { api, getMediaUrl, handleImageError } from '../services/api';
 import { AIAnalysisResult, SnapResult } from '../types';
 import { 
   Upload, 
@@ -127,7 +127,7 @@ export const NewComplaintPage: React.FC = () => {
       setDescription(desc);
       setImagePreview(url);
 
-      const res = await fetch(url);
+      const res = await fetch(getMediaUrl(url));
       const blob = await res.blob();
       const sampleFile = new File([blob], 'sample_distress.jpg', { type: blob.type || 'image/jpeg' });
       setFile(sampleFile);
@@ -528,7 +528,8 @@ export const NewComplaintPage: React.FC = () => {
                       <div>
                         <p className="text-[10px] font-mono text-slate-400 mb-1">YOLOv8 Detection Bounding Box</p>
                         <img
-                          src={aiResult.annotated_image_url || imagePreview || ''}
+                          src={getMediaUrl(aiResult.annotated_image_url) || imagePreview || ''}
+                          onError={handleImageError}
                           alt="Annotated detection"
                           className="w-full h-36 object-cover rounded-lg border border-slate-700"
                         />
@@ -536,7 +537,8 @@ export const NewComplaintPage: React.FC = () => {
                       <div>
                         <p className="text-[10px] font-mono text-indigo-400 mb-1">Explainable AI Saliency Heatmap</p>
                         <img
-                          src={aiResult.xai_heatmap_url || ''}
+                          src={getMediaUrl(aiResult.xai_heatmap_url) || ''}
+                          onError={handleImageError}
                           alt="XAI Saliency"
                           className="w-full h-36 object-cover rounded-lg border border-indigo-700/50"
                         />

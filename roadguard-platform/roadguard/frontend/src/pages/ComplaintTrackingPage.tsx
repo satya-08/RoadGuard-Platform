@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, getMediaUrl, handleImageError } from '../services/api';
 import { Complaint } from '../types';
 import { 
   Search, 
@@ -203,7 +203,8 @@ export const ComplaintTrackingPage: React.FC = () => {
                 <div>
                   <p className="text-[11px] font-mono text-slate-400 mb-1">Optical Inspection Detection</p>
                   <img
-                    src={complaint.annotated_image_url || complaint.image_url}
+                    src={getMediaUrl(complaint.annotated_image_url || complaint.image_url)}
+                    onError={handleImageError}
                     alt="Original damage"
                     className="w-full h-48 object-cover rounded-xl border border-slate-800"
                   />
@@ -213,7 +214,8 @@ export const ComplaintTrackingPage: React.FC = () => {
                   <div>
                     <p className="text-[11px] font-mono text-indigo-400 mb-1">Explainable AI Saliency Heatmap</p>
                     <img
-                      src={complaint.xai_heatmap_url}
+                      src={getMediaUrl(complaint.xai_heatmap_url)}
+                      onError={handleImageError}
                       alt="XAI Saliency"
                       className="w-full h-48 object-cover rounded-xl border border-indigo-900/50"
                     />

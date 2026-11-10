@@ -8,13 +8,24 @@ const API_BASE = RAW_BASE
   ? (RAW_BASE.endsWith('/api/v1') ? RAW_BASE : `${RAW_BASE.replace(/\/$/, '')}/api/v1`)
   : '/api/v1';
 
+export const BACKEND_ORIGIN = RAW_BASE 
+  ? RAW_BASE.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '')
+  : 'https://roadguard-api.onrender.com';
+
+export const DEFAULT_ROAD_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250' fill='%230f172a'><rect width='100%' height='100%' fill='%230f172a'/><path d='M60 210 L170 40 L230 40 L340 210 Z' fill='%231e293b'/><line x1='200' y1='50' x2='200' y2='90' stroke='%23f59e0b' stroke-width='4' stroke-dasharray='8,8'/><line x1='200' y1='110' x2='200' y2='190' stroke='%23f59e0b' stroke-width='4' stroke-dasharray='8,8'/><circle cx='215' cy='150' r='16' fill='%23ef4444' opacity='0.85'/><text x='200' y='230' font-family='sans-serif' font-size='12' fill='%2394a3b8' text-anchor='middle'>Road Damage Evidence</text></svg>";
+
+export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = DEFAULT_ROAD_IMAGE;
+};
+
 export const getMediaUrl = (path?: string): string => {
-  if (!path) return '';
-  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) return path;
-  if (!RAW_BASE) return path;
-  const origin = RAW_BASE.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+  if (!path) return DEFAULT_ROAD_IMAGE;
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
+    return path;
+  }
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${origin}${cleanPath}`;
+  return `${BACKEND_ORIGIN}${cleanPath}`;
 };
 
 function getAuthHeader(): Record<string, string> {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../services/api';
+import { api, getMediaUrl, handleImageError } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Complaint } from '../types';
 import { 
@@ -162,7 +162,8 @@ export const CitizenPortal: React.FC = () => {
                 <div key={c.id} className="p-5 hover:bg-slate-800/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-start space-x-4">
                     <img
-                      src={c.annotated_image_url || c.image_url}
+                      src={getMediaUrl(c.annotated_image_url || c.image_url)}
+                      onError={handleImageError}
                       alt="Defect"
                       className="w-16 h-14 object-cover rounded-xl border border-slate-700 shrink-0"
                     />
